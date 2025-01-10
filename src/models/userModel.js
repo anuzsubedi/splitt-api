@@ -5,10 +5,10 @@ export const findUserByEmail = (email) => {
     return stmt.get(email);
 };
 
-export const createUser = ({ email, name, image }) => {
+export const createUser = ({ uuid, email, name, image }) => {
     const stmt = db.prepare(
-        "INSERT INTO users (email, name, image) VALUES (?, ?, ?)"
+        "INSERT INTO users (uuid, email, name, image) VALUES (?, ?, ?, ?)"
     );
-    const info = stmt.run(email, name, image);
+    const info = stmt.run(uuid, email, name, image);
     return info.lastInsertRowid;
 };
