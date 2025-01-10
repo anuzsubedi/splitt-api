@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import authRoutes from "./routes/authRoutes.js";
+import groupRoutes from "./routes/groupRoutes.js";
 import logger from "./middlewares/logger.js";
 import errorHandler from "./middlewares/errorHandler.js";
 
@@ -20,6 +21,7 @@ app.use(logger);
 
 // Routes
 app.use("/auth", authRoutes);
+app.use("/groups", groupRoutes);
 
 // Error handling middleware
 app.use(errorHandler);
