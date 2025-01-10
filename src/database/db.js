@@ -23,7 +23,9 @@ db.exec(`
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
     description TEXT,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    is_deleted BOOLEAN DEFAULT FALSE, 
+    deleted_at DATETIME
   )
 `);
 
@@ -34,6 +36,8 @@ db.exec(`
     group_id INTEGER NOT NULL,
     user_email TEXT NOT NULL,
     added_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    is_deleted BOOLEAN DEFAULT FALSE,
+    deleted_at DATETIME,
     FOREIGN KEY (group_id) REFERENCES groups (id)
   )
 `);
