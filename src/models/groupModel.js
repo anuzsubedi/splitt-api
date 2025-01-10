@@ -1,4 +1,4 @@
-import db from '../db/db.js';
+import db from '../database/db.js';
 
 export const createGroup = (name, description, callback) => {
     const query = 'INSERT INTO groups (name, description) VALUES (?, ?)';
