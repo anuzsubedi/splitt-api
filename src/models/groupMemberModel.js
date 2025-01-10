@@ -16,6 +16,6 @@ export const deleteGroupMember = (groupId, userEmail, callback) => {
 };
 
 export const getGroupMembers = (groupId, callback) => {
-    const query = 'SELECT * FROM group_members WHERE group_id = ?';
+    const query = 'SELECT * FROM group_members WHERE group_id = ? AND is_deleted = 0';
     db.all(query, [groupId], callback);
 };
