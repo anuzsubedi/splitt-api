@@ -1,0 +1,41 @@
+{
+	"info": {
+		"_postman_collection": "SplittAPI",
+		"name": "Splitt API",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Authentication",
+			"item": [
+				{
+					"name": "Auth",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"uuid\": \"test-uuid-123\",\n\t\"email\": \"test@example.com\",\n\t\"name\": \"Test User\",\n\t\"image\": \"https://example.com/avatar.jpg\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auth",
+							"host": ["{{baseUrl}}"],
+							"path": ["auth"]
+						}
+					}
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:5000"
+		}
+	]
+}
