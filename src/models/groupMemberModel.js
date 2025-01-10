@@ -5,6 +5,16 @@ export const addGroupMember = (groupId, userEmail, callback) => {
     db.run(query, [groupId, userEmail], callback);
 };
 
+export const reinstateGroupMember = (groupId, userEmail, callback) => {
+    const query = 'UPDATE group_members SET is_deleted = 0 WHERE group_id = ? AND user_email = ?';
+    db.run(query, [groupId, userEmail], callback);
+};
+
+export const deleteGroupMember = (groupId, userEmail, callback) => {
+    const query = 'UPDATE group_members SET is_deleted = 1, deleted_at = CURRENT_TIMESTAMP WHERE group_id = ? AND user_email = ?';
+    db.run(query, [groupId, userEmail], callback);
+};
+
 export const getGroupMembers = (groupId, callback) => {
     const query = 'SELECT * FROM group_members WHERE group_id = ?';
     db.all(query, [groupId], callback);
