@@ -19,6 +19,11 @@ app.use(cors({
 }));
 app.use(logger);
 
+// Default route
+app.get("/", (req, res) => {
+    res.send("Server is running. API version: beta 0.1");
+});
+
 // Routes
 app.use("/auth", authRoutes);
 app.use("/groups", groupRoutes);
