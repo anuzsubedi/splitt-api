@@ -1,6 +1,6 @@
 {
 	"info": {
-		"_postman_collection": "SplittAPI",
+		"_postman_id": "SplittAPI",
 		"name": "Splitt API",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
@@ -24,8 +24,253 @@
 						},
 						"url": {
 							"raw": "{{baseUrl}}/auth",
-							"host": ["{{baseUrl}}"],
-							"path": ["auth"]
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auth"
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Groups",
+			"item": [
+				{
+					"name": "Create Group (Success)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"name\": \"Weekend Trip\",\n\t\"description\": \"Planning our weekend getaway\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/groups",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"groups"
+							]
+						}
+					}
+				},
+				{
+					"name": "Create Group (Fail - No Name)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"description\": \"This should fail\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/groups",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"groups"
+							]
+						}
+					}
+				},
+				{
+					"name": "Get All Groups",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/groups",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"groups"
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Group By Id",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/groups/1",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"groups",
+								"1"
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Group By Id (Fail - Invalid Id)",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/groups/999",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"groups",
+								"999"
+							]
+						}
+					}
+				},
+				{
+					"name": "Delete Group",
+					"request": {
+						"method": "DELETE",
+						"url": {
+							"raw": "{{baseUrl}}/groups/1",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"groups",
+								"1"
+							]
+						}
+					}
+				},
+				{
+					"name": "Add Member (Success)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"userEmail\": \"test@example.com\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/groups/1/members",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"groups",
+								"1",
+								"members"
+							]
+						}
+					}
+				},
+				{
+					"name": "Add Member (Fail - No Email)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/groups/1/members",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"groups",
+								"1",
+								"members"
+							]
+						}
+					}
+				},
+				{
+					"name": "Remove Member",
+					"request": {
+						"method": "DELETE",
+						"url": {
+							"raw": "{{baseUrl}}/groups/1/members/test@example.com",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"groups",
+								"1",
+								"members",
+								"test@example.com"
+							]
+						}
+					}
+				},
+				{
+					"name": "Reinstate Member",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"userEmail\": \"test@example.com\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/groups/1/members/reinstate",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"groups",
+								"1",
+								"members",
+								"reinstate"
+							]
+						}
+					}
+				},
+				{
+					"name": "Get User's Groups",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/groups/user/groups?userEmail=test@example.com",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"groups",
+								"user",
+								"groups"
+							],
+							"query": [
+								{
+									"key": "userEmail",
+									"value": "test@example.com"
+								}
+							]
 						}
 					}
 				}
