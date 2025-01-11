@@ -1,0 +1,37 @@
+name: Deploy to DigitalOcean
+
+on:
+  push:
+    branches:
+      - release
+
+jobs:
+  deploy:
+    name: Deploy Application
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "16"
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v0.1.5
+        with:
+          host: ${{ secrets.DO_DROPLET_IP }}
+          username: root
+          key: ${{ secrets.DO_SSH_PRIVATE_KEY }}
+          port: 22
+          script: |
+            cd /var/www/splitt-api
+            git pull origin release
+            npm install
+            pm2 restart splitt-api || pm2 start src/server.js --name splitt-api -- --port 5000
+            pm2 save
