@@ -1,4 +1,4 @@
-name: Test SSH Connection
+name: Deploy to DigitalOcean
 
 on:
   push:
@@ -6,24 +6,90 @@ on:
       - release
 
 jobs:
-  test-ssh:
-    name: Test SSH Connection
+  deploy:
+    name: Deploy Application
     runs-on: ubuntu-latest
 
+    env:
+      JWT_SECRET: ${{ secrets.JWT_SECRET }}
+      JWT_EXPIRES_IN: ${{ secrets.JWT_EXPIRES_IN }}
+      PORT: ${{ secrets.PORT }}
+      FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+      FIREBASE_PRIVATE_KEY_ID: ${{ secrets.FIREBASE_PRIVATE_KEY_ID }}
+      FIREBASE_PRIVATE_KEY: ${{ secrets.FIREBASE_PRIVATE_KEY }}
+      FIREBASE_CLIENT_EMAIL: ${{ secrets.FIREBASE_CLIENT_EMAIL }}
+      FIREBASE_CLIENT_ID: ${{ secrets.FIREBASE_CLIENT_ID }}
+
     steps:
-      - name: Debug SSH key
-        run: |
-          echo "SSH Key format check:"
-          echo "${{ secrets.DO_SSH_PRIVATE_KEY }}" | head -n 1
-          echo "First and last lines of key:"
-          echo "${{ secrets.DO_SSH_PRIVATE_KEY }}" | head -n 1 && echo "${{ secrets.DO_SSH_PRIVATE_KEY }}" | tail -n 1
+      # Step 1: Checkout Repository
+      - name: Checkout Repository
+        uses: actions/checkout@v3
 
-      - name: Add SSH key
-        run: |
-          mkdir -p ~/.ssh/
-          echo "${{ secrets.DO_SSH_PRIVATE_KEY }}" > ~/.ssh/deploy_key
-          chmod 600 ~/.ssh/deploy_key
-          ssh-keyscan -H ${{ secrets.DO_DROPLET_IP }} >> ~/.ssh/known_hosts
+      # Step 2: Setup Node.js
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "18"
 
-      - name: Test SSH Connection
-        run: ssh -v -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no root@${{ secrets.DO_DROPLET_IP }} 'echo "SSH Connection Successful"'
+      # Step 3: Install Dependencies
+      - name: Install Dependencies
+        run: npm install
+
+      # Step 4: Verify SSH Key is Working
+      - name: Verify SSH Key
+        uses: appleboy/ssh-action@v0.1.5
+        with:
+          host: ${{ secrets.DO_DROPLET_IP }}
+          username: root
+          key: ${{ secrets.DO_SSH_PRIVATE_KEY }}
+          port: 22
+          script: |
+            echo "SSH connection successful!"
+            echo "Running a simple command to verify access:"
+            whoami
+
+      # Step 5: Deploy Application
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v0.1.5
+        with:
+          host: ${{ secrets.DO_DROPLET_IP }}
+          username: root
+          key: ${{ secrets.DO_SSH_PRIVATE_KEY }}
+          port: 22
+          envs: JWT_SECRET,JWT_EXPIRES_IN,PORT,FIREBASE_PROJECT_ID,FIREBASE_PRIVATE_KEY_ID,FIREBASE_PRIVATE_KEY,FIREBASE_CLIENT_EMAIL,FIREBASE_CLIENT_ID
+          script: |
+            set -e
+            cd /var/www/splitt-api
+            git pull origin release
+            npm install
+
+            # Export environment variables
+            export JWT_SECRET="${JWT_SECRET}"
+            export JWT_EXPIRES_IN=${JWT_EXPIRES_IN}
+            export PORT=${PORT}
+            export FIREBASE_PROJECT_ID="${FIREBASE_PROJECT_ID}"
+            export FIREBASE_PRIVATE_KEY_ID="${FIREBASE_PRIVATE_KEY_ID}"
+            export FIREBASE_PRIVATE_KEY='${FIREBASE_PRIVATE_KEY}'
+            export FIREBASE_CLIENT_EMAIL="${FIREBASE_CLIENT_EMAIL}"
+            export FIREBASE_CLIENT_ID="${FIREBASE_CLIENT_ID}"
+
+            # Start/Restart application using PM2
+            pm2 restart splitt-api || pm2 start src/server.js --name splitt-api -- --port 5000
+            pm2 save
+
+      # Step 6: Wait for a Few Seconds After Deployment
+      - name: Wait for Application to Start
+        run: sleep 10  # Wait for 10 seconds to ensure the app is fully up
+
+      # Step 7: Verify Health Check Endpoint
+      - name: Verify Health Check
+        run: |
+          HEALTH_CHECK_URL="http://${{ secrets.DO_DROPLET_IP }}:5000/health"
+          echo "Checking health at: $HEALTH_CHECK_URL"
+          response=$(curl -s -o /dev/null -w "%{http_code}" $HEALTH_CHECK_URL)
+          if [ "$response" -eq 200 ]; then
+            echo "Health check passed!"
+          else
+            echo "Health check failed with status code: $response"
+            exit 1  # Fail the workflow if health check fails
+          fi
