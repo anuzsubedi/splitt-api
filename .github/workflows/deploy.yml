@@ -7,60 +7,66 @@ on:
 
 jobs:
   deploy:
-    name: Deploy Node.js Application
+    name: Deploy to DigitalOcean
     runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Checkout the repository
-      - name: Checkout Code
-        uses: actions/checkout@v3
+    - name: Checkout code
+      uses: actions/checkout@v3
 
-      # Step 2: Setup Node.js
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: "18"
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '16'
 
-      # Step 3: Install dependencies locally (optional)
-      - name: Install Dependencies
-        run: npm install
+    - name: Install dependencies
+      run: npm install
 
-      # Step 4: Deploy to DigitalOcean via SSH
-      - name: Deploy to Server
-        uses: appleboy/ssh-action@v0.1.5
-        with:
-          host: ${{ secrets.DO_DROPLET_IP }}
-          username: root
-          key: ${{ secrets.DO_SSH_PRIVATE_KEY }}
-          port: 22
-          script: |
-            # Navigate to the application directory or create it if missing
-            cd /var/www/splitt-api || (mkdir -p /var/www/splitt-api && cd /var/www/splitt-api)
+    - name: Build the application
+      run: npm run build
 
-            # Initialize Git if it's not already initialized
-            git init
+    - name: Transfer files to DigitalOcean
+      uses: appleboy/scp-action@v0.1.3
+      with:
+        host: ${{ secrets.DO_DROPLET_IP }}
+        username: root
+        key: ${{ secrets.DO_SSH_PRIVATE_KEY }}
+        source: "./"
+        target: "/var/www/splitt-api" # Adjust target directory if needed
 
-            # Check if the origin remote exists
-            git remote | grep origin || git remote add origin https://github.com/anuzsubedi/splitt-api.git
+    - name: Set environment variables on server
+      run: |
+        ssh -i ~/.ssh/id_rsa root@${{ secrets.DO_DROPLET_IP }} << EOF
+          echo "Setting environment variables..."
+          echo "FIREBASE_CLIENT_EMAIL=${{ secrets.FIREBASE_CLIENT_EMAIL }}" > /var/www/splitt-api/.env
+          echo "FIREBASE_PRIVATE_KEY=${{ secrets.FIREBASE_PRIVATE_KEY }}" >> /var/www/splitt-api/.env
+          echo "FIREBASE_PRIVATE_KEY_ID=${{ secrets.FIREBASE_PRIVATE_KEY_ID }}" >> /var/www/splitt-api/.env
+          echo "FIREBASE_PROJECT_ID=${{ secrets.FIREBASE_PROJECT_ID }}" >> /var/www/splitt-api/.env
+          echo "JWT_EXPIRES_IN=${{ secrets.JWT_EXPIRES_IN }}" >> /var/www/splitt-api/.env
+          echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> /var/www/splitt-api/.env
+          echo "PORT=${{ secrets.PORT }}" >> /var/www/splitt-api/.env
+        EOF
 
-            # Pull the latest release branch
-            git fetch origin
-            git reset --hard origin/release
+    - name: Start the server
+      run: |
+        ssh -i ~/.ssh/id_rsa root@${{ secrets.DO_DROPLET_IP }} << EOF
+          cd /var/www/splitt-api
+          pm2 delete splitt-api || true
+          pm2 start server.js --name splitt-api --log /var/www/splitt-api/server.log
+        EOF
 
-            # Install application dependencies
-            npm install
-
-            # Create or update the .env file with environment variables
-            echo "PORT=${{ secrets.PORT }}" > .env
-            echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> .env
-            echo "JWT_EXPIRES_IN=${{ secrets.JWT_EXPIRES_IN }}" >> .env
-            echo "FIREBASE_PROJECT_ID=${{ secrets.FIREBASE_PROJECT_ID }}" >> .env
-            echo "FIREBASE_PRIVATE_KEY_ID=${{ secrets.FIREBASE_PRIVATE_KEY_ID }}" >> .env
-            echo "FIREBASE_PRIVATE_KEY='${{ secrets.FIREBASE_PRIVATE_KEY }}'" >> .env
-            echo "FIREBASE_CLIENT_EMAIL=${{ secrets.FIREBASE_CLIENT_EMAIL }}" >> .env
-            echo "FIREBASE_CLIENT_ID=${{ secrets.FIREBASE_CLIENT_ID }}" >> .env
-
-            # Start or restart the application using PM2
-            pm2 delete splitt-api || true
-            pm2 start src/server.js --name splitt-api
-            pm2 save
+    - name: Wait for server to start
+      run: |
+        ssh -i ~/.ssh/id_rsa root@${{ secrets.DO_DROPLET_IP }} << EOF
+          echo "Waiting for server to start..."
+          for i in {1..10}; do
+            if grep -q "Server is running on http://localhost:" /var/www/splitt-api/server.log; then
+              echo "Server started successfully."
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "Error: Server did not start."
+          cat /var/www/splitt-api/server.log
+          exit 1
+        EOF
