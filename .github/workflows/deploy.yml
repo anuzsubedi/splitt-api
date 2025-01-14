@@ -48,7 +48,7 @@ jobs:
             npm install
             
             # Create .env file with proper escaping
-            cat > .env << EOL
+            cat > .env << 'EOL'
             JWT_SECRET="${JWT_SECRET}"
             JWT_EXPIRES_IN=${JWT_EXPIRES_IN}
             PORT=${PORT}
