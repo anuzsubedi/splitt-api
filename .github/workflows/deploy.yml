@@ -37,7 +37,7 @@ jobs:
         with:
           host: ${{ secrets.DO_DROPLET_IP }}
           username: root
-          key: ${{ secrets.DO_SSH_PRIVATE_KEY }}
+          key: ${{ secrets.DO_SSH_PRIVATE_KEY }} 
           port: 22
           envs: JWT_SECRET,JWT_EXPIRES_IN,PORT,FIREBASE_PROJECT_ID,FIREBASE_PRIVATE_KEY_ID,FIREBASE_PRIVATE_KEY,FIREBASE_CLIENT_EMAIL,FIREBASE_CLIENT_ID
           script: |
