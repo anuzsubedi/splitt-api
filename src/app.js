@@ -4,9 +4,12 @@ import authRoutes from "./routes/authRoutes.js";
 import groupRoutes from "./routes/groupRoutes.js";
 import logger from "./middlewares/logger.js";
 import errorHandler from "./middlewares/errorHandler.js";
-
+import { auth } from "../src/controllers/authController.js";
+import dotenv from "dotenv";
 const app = express();
+const router = express.Router();
 
+dotenv.config();
 // Middleware
 app.use(express.json());
 app.use(cors({
@@ -18,6 +21,11 @@ app.use(cors({
     credentials: true
 }));
 app.use(logger);
+
+// Log incoming requests
+router.use(logger);
+
+router.post("/google", auth);
 
 // Default route
 app.get("/", (req, res) => {

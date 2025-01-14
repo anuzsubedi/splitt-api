@@ -1,13 +1,14 @@
 import { findUserByEmail, createUser } from "../models/userModel.js";
 
-export const handleAuth = ({ uuid, email, name, image }) => {
+export const handleAuth = ({ email, name, image, uuid }) => {
+    // Check if the user exists in the database
+    let user = findUserByEmail(email);
 
-    const existingUser = findUserByEmail(email);
-
-    if (existingUser) {
-        return existingUser; // Log in the user
+    if (!user) {
+        // Create a new user if not found
+        const userId = createUser({ uuid, email, name, image });
+        user = { id: userId, uuid, email, name, image };
     }
 
-    const userId = createUser({ uuid, email, name, image });
-    return { id: userId, uuid, email, name, image }; // Sign up the user
+    return user;
 };
