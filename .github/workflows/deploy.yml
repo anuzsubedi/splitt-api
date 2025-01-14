@@ -42,5 +42,25 @@ jobs:
             cd /var/www/splitt-api
             git pull origin release
             npm install
-            pm2 restart splitt-api || pm2 start src/server.js --name splitt-api -- --port $PORT
+            
+            # Create ecosystem config with environment variables
+            echo "module.exports = {
+              apps: [{
+                name: 'splitt-api',
+                script: 'src/server.js',
+                env: {
+                  PORT: '$PORT',
+                  JWT_SECRET: '$JWT_SECRET',
+                  JWT_EXPIRES_IN: '$JWT_EXPIRES_IN',
+                  FIREBASE_PROJECT_ID: '$FIREBASE_PROJECT_ID',
+                  FIREBASE_PRIVATE_KEY_ID: '$FIREBASE_PRIVATE_KEY_ID',
+                  FIREBASE_PRIVATE_KEY: '$FIREBASE_PRIVATE_KEY',
+                  FIREBASE_CLIENT_EMAIL: '$FIREBASE_CLIENT_EMAIL',
+                  FIREBASE_CLIENT_ID: '$FIREBASE_CLIENT_ID'
+                }
+              }]
+            }" > ecosystem.config.js
+            
+            # Restart or start the application using the ecosystem file
+            pm2 restart ecosystem.config.js || pm2 start ecosystem.config.js
             pm2 save
