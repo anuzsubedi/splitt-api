@@ -37,9 +37,13 @@ jobs:
             # Navigate to the application directory or create it if missing
             cd /var/www/splitt-api || (mkdir -p /var/www/splitt-api && cd /var/www/splitt-api)
 
-            # Initialize git and pull the latest release branch
+            # Initialize Git if it's not already initialized
             git init
-            git remote add origin https://github.com/anuzsubedi/splitt-api.git || true
+
+            # Check if the origin remote exists
+            git remote | grep origin || git remote add origin https://github.com/anuzsubedi/splitt-api.git
+
+            # Pull the latest release branch
             git fetch origin
             git reset --hard origin/release
 
