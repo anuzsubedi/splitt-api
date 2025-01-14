@@ -29,7 +29,7 @@ router.post("/google", auth);
 
 // Default route
 app.get("/", (req, res) => {
-    res.send("Server is running. API version: beta 0.2");
+    res.send("Server is running. API version: beta 0.2.1");
 });
 
 // Routes
