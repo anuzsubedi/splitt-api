@@ -9,6 +9,16 @@ jobs:
   deploy:
     name: Deploy Application
     runs-on: ubuntu-latest
+    
+    env:
+      JWT_SECRET: ${{ secrets.JWT_SECRET }}
+      JWT_EXPIRES_IN: ${{ secrets.JWT_EXPIRES_IN }}
+      PORT: ${{ secrets.PORT }}
+      FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+      FIREBASE_PRIVATE_KEY_ID: ${{ secrets.FIREBASE_PRIVATE_KEY_ID }}
+      FIREBASE_PRIVATE_KEY: ${{ secrets.FIREBASE_PRIVATE_KEY }}
+      FIREBASE_CLIENT_EMAIL: ${{ secrets.FIREBASE_CLIENT_EMAIL }}
+      FIREBASE_CLIENT_ID: ${{ secrets.FIREBASE_CLIENT_ID }}
 
     steps:
       - name: Checkout Repository
@@ -29,9 +39,35 @@ jobs:
           username: root
           key: ${{ secrets.DO_SSH_PRIVATE_KEY }}
           port: 22
+          envs: JWT_SECRET,JWT_EXPIRES_IN,PORT,FIREBASE_PROJECT_ID,FIREBASE_PRIVATE_KEY_ID,FIREBASE_PRIVATE_KEY,FIREBASE_CLIENT_EMAIL,FIREBASE_CLIENT_ID
           script: |
+            set -e
             cd /var/www/splitt-api
             git pull origin release
             npm install
-            pm2 restart splitt-api || pm2 start src/server.js --name splitt-api -- --port 5000
+            
+            # Create .env file with proper escaping
+            cat > .env << EOL
+            JWT_SECRET="${JWT_SECRET}"
+            JWT_EXPIRES_IN=${JWT_EXPIRES_IN}
+            PORT=${PORT}
+            FIREBASE_PROJECT_ID="${FIREBASE_PROJECT_ID}"
+            FIREBASE_PRIVATE_KEY_ID="${FIREBASE_PRIVATE_KEY_ID}"
+            FIREBASE_PRIVATE_KEY='${FIREBASE_PRIVATE_KEY}'
+            FIREBASE_CLIENT_EMAIL="${FIREBASE_CLIENT_EMAIL}"
+            FIREBASE_CLIENT_ID="${FIREBASE_CLIENT_ID}"
+            EOL
+            
+            # Ensure PM2 is installed
+            if ! command -v pm2 &> /dev/null; then
+              npm install -g pm2
+            fi
+            
+            # Start/Restart application
+            pm2 describe splitt-api > /dev/null
+            if [ $? -eq 0 ]; then
+              pm2 restart splitt-api
+            else
+              pm2 start src/server.js --name splitt-api
+            fi
             pm2 save
