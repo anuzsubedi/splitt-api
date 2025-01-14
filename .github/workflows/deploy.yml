@@ -22,9 +22,6 @@ jobs:
     - name: Install dependencies
       run: npm install
 
-    - name: Build the application
-      run: npm run build
-
     - name: Transfer files to DigitalOcean
       uses: appleboy/scp-action@v0.1.3
       with:
@@ -52,7 +49,7 @@ jobs:
         ssh -i ~/.ssh/id_rsa root@${{ secrets.DO_DROPLET_IP }} << EOF
           cd /var/www/splitt-api
           pm2 delete splitt-api || true
-          pm2 start server.js --name splitt-api --log /var/www/splitt-api/server.log
+          pm2 start npm --name splitt-api -- start
         EOF
 
     - name: Wait for server to start
@@ -67,6 +64,6 @@ jobs:
             sleep 5
           done
           echo "Error: Server did not start."
-          cat /var/www/splitt-api/server.log
+          pm2 logs splitt-api --lines 100
           exit 1
         EOF
