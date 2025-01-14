@@ -1,4 +1,4 @@
-name: Deploy to DigitalOcean
+name: Test SSH Connection
 
 on:
   push:
@@ -6,23 +6,19 @@ on:
       - release
 
 jobs:
-  deploy:
-    name: Deploy Application
+  test-ssh:
+    name: Test SSH Connection
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v3
+      - name: Debug SSH key
+        run: |
+          echo "SSH Key format check:"
+          echo "${{ secrets.DO_SSH_PRIVATE_KEY }}" | head -n 1
+          echo "First and last lines of key:"
+          echo "${{ secrets.DO_SSH_PRIVATE_KEY }}" | head -n 1 && echo "${{ secrets.DO_SSH_PRIVATE_KEY }}" | tail -n 1
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: "18"
-
-      - name: Install Dependencies
-        run: npm install
-
-      - name: Add SSH key to known hosts
+      - name: Add SSH key
         run: |
           mkdir -p ~/.ssh/
           echo "${{ secrets.DO_SSH_PRIVATE_KEY }}" > ~/.ssh/deploy_key
@@ -30,20 +26,4 @@ jobs:
           ssh-keyscan -H ${{ secrets.DO_DROPLET_IP }} >> ~/.ssh/known_hosts
 
       - name: Test SSH Connection
-        run: ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no root@${{ secrets.DO_DROPLET_IP }} 'echo "SSH Connection Successful"'
-
-      - name: Deploy via SSH
-        uses: appleboy/ssh-action@v0.1.5
-        with:
-          host: ${{ secrets.DO_DROPLET_IP }}
-          username: root
-          key: ${{ secrets.DO_SSH_PRIVATE_KEY }}
-          port: 22
-          debug: true
-          script: |
-            set -e
-            cd /var/www/splitt-api
-            git pull origin release
-            npm install
-            pm2 restart splitt-api || pm2 start src/server.js --name splitt-api -- --port 5000
-            pm2 save
+        run: ssh -v -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no root@${{ secrets.DO_DROPLET_IP }} 'echo "SSH Connection Successful"'
