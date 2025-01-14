@@ -10,6 +10,16 @@ jobs:
     name: Deploy Application
     runs-on: ubuntu-latest
 
+    env:
+      JWT_SECRET: ${{ secrets.JWT_SECRET }}
+      JWT_EXPIRES_IN: ${{ secrets.JWT_EXPIRES_IN }}
+      PORT: ${{ secrets.PORT }}
+      FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+      FIREBASE_PRIVATE_KEY_ID: ${{ secrets.FIREBASE_PRIVATE_KEY_ID }}
+      FIREBASE_PRIVATE_KEY: ${{ secrets.FIREBASE_PRIVATE_KEY }}
+      FIREBASE_CLIENT_EMAIL: ${{ secrets.FIREBASE_CLIENT_EMAIL }}
+      FIREBASE_CLIENT_ID: ${{ secrets.FIREBASE_CLIENT_ID }}
+
     steps:
       # Step 1: Checkout Repository
       - name: Checkout Repository
@@ -42,15 +52,17 @@ jobs:
             git pull origin release
             npm install
 
-            # Export environment variables
-            export JWT_SECRET="$JWT_SECRET"
-            export JWT_EXPIRES_IN="$JWT_EXPIRES_IN"
-            export PORT="$PORT"
-            export FIREBASE_PROJECT_ID="$FIREBASE_PROJECT_ID"
-            export FIREBASE_PRIVATE_KEY_ID="$FIREBASE_PRIVATE_KEY_ID"
-            export FIREBASE_PRIVATE_KEY='$FIREBASE_PRIVATE_KEY'
-            export FIREBASE_CLIENT_EMAIL="$FIREBASE_CLIENT_EMAIL"
-            export FIREBASE_CLIENT_ID="$FIREBASE_CLIENT_ID"
+            # Create .env file with environment variables
+            cat > .env <<EOL
+            JWT_SECRET="$JWT_SECRET"
+            JWT_EXPIRES_IN="$JWT_EXPIRES_IN"
+            PORT="$PORT"
+            FIREBASE_PROJECT_ID="$FIREBASE_PROJECT_ID"
+            FIREBASE_PRIVATE_KEY_ID="$FIREBASE_PRIVATE_KEY_ID"
+            FIREBASE_PRIVATE_KEY='$FIREBASE_PRIVATE_KEY'
+            FIREBASE_CLIENT_EMAIL="$FIREBASE_CLIENT_EMAIL"
+            FIREBASE_CLIENT_ID="$FIREBASE_CLIENT_ID"
+            EOL
 
             # Start/Restart application using PM2
             pm2 restart splitt-api || pm2 start src/server.js --name splitt-api -- --port 5000
