@@ -32,6 +32,17 @@ jobs:
       - name: Install Dependencies
         run: npm install
 
+      - name: Test SSH Connection
+        uses: appleboy/ssh-action@v0.1.5
+        with:
+          debug: true
+          host: ${{ secrets.DO_DROPLET_IP }}
+          username: root
+          key: ${{ secrets.DO_SSH_PRIVATE_KEY }}
+          port: 22
+          script: |
+            echo "SSH connection successful!"
+
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v0.1.5
         with:
