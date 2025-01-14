@@ -10,28 +10,9 @@ jobs:
     name: Deploy Application
     runs-on: ubuntu-latest
     
-    env:
-      JWT_SECRET: ${{ secrets.JWT_SECRET }}
-      JWT_EXPIRES_IN: ${{ secrets.JWT_EXPIRES_IN }}
-      PORT: ${{ secrets.PORT }}
-      FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
-      FIREBASE_PRIVATE_KEY_ID: ${{ secrets.FIREBASE_PRIVATE_KEY_ID }}
-      FIREBASE_PRIVATE_KEY: ${{ secrets.FIREBASE_PRIVATE_KEY }}
-      FIREBASE_CLIENT_EMAIL: ${{ secrets.FIREBASE_CLIENT_EMAIL }}
-      FIREBASE_CLIENT_ID: ${{ secrets.FIREBASE_CLIENT_ID }}
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '18'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
 
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v0.1.5
@@ -40,46 +21,22 @@ jobs:
           username: root
           key: ${{ secrets.DO_SSH_PRIVATE_KEY }}
           port: 22
-          envs: JWT_SECRET,JWT_EXPIRES_IN,PORT,FIREBASE_PROJECT_ID,FIREBASE_PRIVATE_KEY_ID,FIREBASE_PRIVATE_KEY,FIREBASE_CLIENT_EMAIL,FIREBASE_CLIENT_ID
           script: |
-            set -e
-            echo "Starting deployment..."
+            export NVM_DIR=~/.nvm
+            source ~/.nvm/nvm.sh
             
-            # Navigate to project directory
             cd /var/www/splitt-api
-            
-            # Pull latest changes
             git pull origin release
+            npm install
             
-            # Install dependencies
-            npm ci --only=production
+            echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" > .env
+            echo "JWT_EXPIRES_IN=${{ secrets.JWT_EXPIRES_IN }}" >> .env
+            echo "PORT=${{ secrets.PORT }}" >> .env
+            echo "FIREBASE_PROJECT_ID=${{ secrets.FIREBASE_PROJECT_ID }}" >> .env
+            echo "FIREBASE_PRIVATE_KEY_ID=${{ secrets.FIREBASE_PRIVATE_KEY_ID }}" >> .env
+            echo "FIREBASE_PRIVATE_KEY='${{ secrets.FIREBASE_PRIVATE_KEY }}'" >> .env
+            echo "FIREBASE_CLIENT_EMAIL=${{ secrets.FIREBASE_CLIENT_EMAIL }}" >> .env
+            echo "FIREBASE_CLIENT_ID=${{ secrets.FIREBASE_CLIENT_ID }}" >> .env
             
-            # Create .env file
-            cat > .env << EOL
-            JWT_SECRET='${JWT_SECRET}'
-            JWT_EXPIRES_IN='${JWT_EXPIRES_IN}'
-            PORT=${PORT}
-            FIREBASE_PROJECT_ID='${FIREBASE_PROJECT_ID}'
-            FIREBASE_PRIVATE_KEY_ID='${FIREBASE_PRIVATE_KEY_ID}'
-            FIREBASE_PRIVATE_KEY='${FIREBASE_PRIVATE_KEY}'
-            FIREBASE_CLIENT_EMAIL='${FIREBASE_CLIENT_EMAIL}'
-            FIREBASE_CLIENT_ID='${FIREBASE_CLIENT_ID}'
-            EOL
-            
-            # Install PM2 if not present
-            if ! command -v pm2 &> /dev/null; then
-              npm install -g pm2
-            fi
-            
-            # Restart or start application
-            pm2 describe splitt-api > /dev/null
-            if [ $? -eq 0 ]; then
-              pm2 restart splitt-api --update-env
-            else
-              pm2 start src/server.js --name splitt-api
-            fi
-            
-            # Save PM2 process list
+            pm2 restart splitt-api || pm2 start src/server.js --name splitt-api
             pm2 save
-            
-            echo "Deployment completed successfully"
