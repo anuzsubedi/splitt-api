@@ -46,7 +46,7 @@ jobs:
       # Step 5: Deploy Application
       - name: Deploy via SSH
         run: |
-          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no root@${{ secrets.DO_DROPLET_IP }} << 'EOF'
+          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no root@${{ secrets.DO_DROPLET_IP }} << "EOF"
             set -e
             cd /var/www/splitt-api
             git pull origin release
