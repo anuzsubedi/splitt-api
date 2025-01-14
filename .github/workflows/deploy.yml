@@ -30,39 +30,26 @@ jobs:
           key: ${{ secrets.DO_SSH_PRIVATE_KEY }}
           port: 22
           script: |
+            # Navigate to project directory
             cd /var/www/splitt-api
+
+            # Pull the latest changes from the release branch
             git pull origin release
+
+            # Install dependencies
             npm install
-            
-            # Export environment variables on the server
-            echo "export PORT=${{ secrets.PORT }}" >> ~/.bashrc
-            echo "export JWT_SECRET=${{ secrets.JWT_SECRET }}" >> ~/.bashrc
-            echo "export JWT_EXPIRES_IN=${{ secrets.JWT_EXPIRES_IN }}" >> ~/.bashrc
-            echo "export FIREBASE_PROJECT_ID=${{ secrets.FIREBASE_PROJECT_ID }}" >> ~/.bashrc
-            echo "export FIREBASE_PRIVATE_KEY_ID=${{ secrets.FIREBASE_PRIVATE_KEY_ID }}" >> ~/.bashrc
-            echo "export FIREBASE_PRIVATE_KEY='${{ secrets.FIREBASE_PRIVATE_KEY }}'" >> ~/.bashrc
-            echo "export FIREBASE_CLIENT_EMAIL=${{ secrets.FIREBASE_CLIENT_EMAIL }}" >> ~/.bashrc
-            echo "export FIREBASE_CLIENT_ID=${{ secrets.FIREBASE_CLIENT_ID }}" >> ~/.bashrc
-            source ~/.bashrc
 
-            # Create PM2 ecosystem file with environment variables
-            echo "module.exports = {
-              apps: [{
-                name: 'splitt-api',
-                script: 'src/server.js',
-                env: {
-                  PORT: process.env.PORT,
-                  JWT_SECRET: process.env.JWT_SECRET,
-                  JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN,
-                  FIREBASE_PROJECT_ID: process.env.FIREBASE_PROJECT_ID,
-                  FIREBASE_PRIVATE_KEY_ID: process.env.FIREBASE_PRIVATE_KEY_ID,
-                  FIREBASE_PRIVATE_KEY: process.env.FIREBASE_PRIVATE_KEY,
-                  FIREBASE_CLIENT_EMAIL: process.env.FIREBASE_CLIENT_EMAIL,
-                  FIREBASE_CLIENT_ID: process.env.FIREBASE_CLIENT_ID
-                }
-              }]
-            }" > ecosystem.config.js
+            # Export environment variables for runtime
+            echo "PORT=${{ secrets.PORT }}" > .env
+            echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> .env
+            echo "JWT_EXPIRES_IN=${{ secrets.JWT_EXPIRES_IN }}" >> .env
+            echo "FIREBASE_PROJECT_ID=${{ secrets.FIREBASE_PROJECT_ID }}" >> .env
+            echo "FIREBASE_PRIVATE_KEY_ID=${{ secrets.FIREBASE_PRIVATE_KEY_ID }}" >> .env
+            echo "FIREBASE_PRIVATE_KEY='${{ secrets.FIREBASE_PRIVATE_KEY }}'" >> .env
+            echo "FIREBASE_CLIENT_EMAIL=${{ secrets.FIREBASE_CLIENT_EMAIL }}" >> .env
+            echo "FIREBASE_CLIENT_ID=${{ secrets.FIREBASE_CLIENT_ID }}" >> .env
 
-            # Restart or start the application using PM2
-            pm2 restart ecosystem.config.js || pm2 start ecosystem.config.js
+            # Use PM2 to start or restart the app
+            pm2 delete splitt-api || true
+            pm2 start src/server.js --name splitt-api --env production
             pm2 save
