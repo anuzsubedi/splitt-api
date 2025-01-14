@@ -1,12 +1,37 @@
-name: Deploy
+name: Deploy to DigitalOcean
+
 on:
   push:
-    branches: [ release ]
+    branches:
+      - release
 
 jobs:
   deploy:
+    name: Deploy Application
     runs-on: ubuntu-latest
+
+    env:
+      JWT_SECRET: ${{ secrets.JWT_SECRET }}
+      JWT_EXPIRES_IN: ${{ secrets.JWT_EXPIRES_IN }}
+      PORT: ${{ secrets.PORT }}
+      FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+      FIREBASE_PRIVATE_KEY_ID: ${{ secrets.FIREBASE_PRIVATE_KEY_ID }}
+      FIREBASE_PRIVATE_KEY: ${{ secrets.FIREBASE_PRIVATE_KEY }}
+      FIREBASE_CLIENT_EMAIL: ${{ secrets.FIREBASE_CLIENT_EMAIL }}
+      FIREBASE_CLIENT_ID: ${{ secrets.FIREBASE_CLIENT_ID }}
+
     steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "18"
+
+      - name: Install Dependencies
+        run: npm install
+
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v0.1.5
         with:
@@ -21,17 +46,21 @@ jobs:
             git pull origin release
             npm install
 
-            # Create .env file with proper escaping
-            cat > .env << 'EOL'
-            JWT_SECRET="${JWT_SECRET}"
-            JWT_EXPIRES_IN=${JWT_EXPIRES_IN}
-            PORT=${PORT}
-            FIREBASE_PROJECT_ID="${FIREBASE_PROJECT_ID}"
-            FIREBASE_PRIVATE_KEY_ID="${FIREBASE_PRIVATE_KEY_ID}"
-            FIREBASE_PRIVATE_KEY='${FIREBASE_PRIVATE_KEY}'
-            FIREBASE_CLIENT_EMAIL="${FIREBASE_CLIENT_EMAIL}"
-            FIREBASE_CLIENT_ID="${FIREBASE_CLIENT_ID}"
-            EOL
+            # Export environment variables
+            export JWT_SECRET="${JWT_SECRET}"
+            export JWT_EXPIRES_IN=${JWT_EXPIRES_IN}
+            export PORT=${PORT}
+            export FIREBASE_PROJECT_ID="${FIREBASE_PROJECT_ID}"
+            export FIREBASE_PRIVATE_KEY_ID="${FIREBASE_PRIVATE_KEY_ID}"
+            export FIREBASE_PRIVATE_KEY='${FIREBASE_PRIVATE_KEY}'
+            export FIREBASE_CLIENT_EMAIL="${FIREBASE_CLIENT_EMAIL}"
+            export FIREBASE_CLIENT_ID="${FIREBASE_CLIENT_ID}"
 
-            pm2 restart splitt-api || pm2 start src/server.js --name splitt-api -- --port 5000
+            # Start/Restart application using PM2
+            pm2 describe splitt-api > /dev/null
+            if [ $? -eq 0 ]; then
+              pm2 restart splitt-api
+            else
+              pm2 start src/server.js --name splitt-api
+            fi
             pm2 save
