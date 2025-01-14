@@ -9,42 +9,41 @@ jobs:
   deploy:
     name: Deploy Application
     runs-on: ubuntu-latest
-    
+
     steps:
-      - name: Checkout code
+      - name: Checkout Repository
         uses: actions/checkout@v3
-        
-      - name: Install SSH key
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "16"
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Add SSH key to known hosts
         run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.DO_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
+          mkdir -p ~/.ssh/
+          echo "${{ secrets.DO_SSH_PRIVATE_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
           ssh-keyscan -H ${{ secrets.DO_DROPLET_IP }} >> ~/.ssh/known_hosts
+
+      - name: Test SSH Connection
+        run: ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no root@${{ secrets.DO_DROPLET_IP }} 'echo "SSH Connection Successful"'
 
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v0.1.5
         with:
-          debug: true 
           host: ${{ secrets.DO_DROPLET_IP }}
           username: root
           key: ${{ secrets.DO_SSH_PRIVATE_KEY }}
           port: 22
+          debug: true
           script: |
-            export NVM_DIR=~/.nvm
-            source ~/.nvm/nvm.sh
-            
+            set -e
             cd /var/www/splitt-api
             git pull origin release
             npm install
-            
-            echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" > .env
-            echo "JWT_EXPIRES_IN=${{ secrets.JWT_EXPIRES_IN }}" >> .env
-            echo "PORT=${{ secrets.PORT }}" >> .env
-            echo "FIREBASE_PROJECT_ID=${{ secrets.FIREBASE_PROJECT_ID }}" >> .env
-            echo "FIREBASE_PRIVATE_KEY_ID=${{ secrets.FIREBASE_PRIVATE_KEY_ID }}" >> .env
-            echo "FIREBASE_PRIVATE_KEY='${{ secrets.FIREBASE_PRIVATE_KEY }}'" >> .env
-            echo "FIREBASE_CLIENT_EMAIL=${{ secrets.FIREBASE_CLIENT_EMAIL }}" >> .env
-            echo "FIREBASE_CLIENT_ID=${{ secrets.FIREBASE_CLIENT_ID }}" >> .env
-            
-            pm2 restart splitt-api || pm2 start src/server.js --name splitt-api
+            pm2 restart splitt-api || pm2 start src/server.js --name splitt-api -- --port 5000
             pm2 save
