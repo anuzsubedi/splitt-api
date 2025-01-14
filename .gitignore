@@ -2,3 +2,5 @@
 src/database/app.db
 .DS_Store
 .env
+src/config/config.json
+*.zip
