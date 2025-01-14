@@ -45,8 +45,13 @@ jobs:
           port: 22
           script: |
             echo "SSH connection successful!"
-            echo "Running a simple command to verify access:"
-            whoami
+            echo "Verifying access to deployment directory..."
+            if [ -d /var/www/splitt-api ]; then
+              echo "Deployment directory exists."
+            else
+              echo "Deployment directory does not exist."
+              exit 1  # Fail if the directory doesn't exist
+            fi
 
       # Step 5: Deploy Application
       - name: Deploy via SSH
