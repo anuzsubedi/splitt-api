@@ -45,20 +45,17 @@ jobs:
             npm install
 
             # Create .env file
-            cat > .env << EOL
-            FIREBASE_CLIENT_EMAIL="${FIREBASE_CLIENT_EMAIL}"
-            FIREBASE_PRIVATE_KEY="${FIREBASE_PRIVATE_KEY}"
-            FIREBASE_PRIVATE_KEY_ID="${FIREBASE_PRIVATE_KEY_ID}"
-            FIREBASE_PROJECT_ID="${FIREBASE_PROJECT_ID}"
-            FIREBASE_CLIENT_ID="${FIREBASE_CLIENT_ID}"
-            JWT_EXPIRES_IN="${JWT_EXPIRES_IN}"
-            JWT_SECRET="${JWT_SECRET}"
-            PORT="${PORT}"
-            EOL
+            echo "FIREBASE_CLIENT_EMAIL=${FIREBASE_CLIENT_EMAIL}
+            FIREBASE_PRIVATE_KEY=${FIREBASE_PRIVATE_KEY}
+            FIREBASE_PRIVATE_KEY_ID=${FIREBASE_PRIVATE_KEY_ID}
+            FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID}
+            FIREBASE_CLIENT_ID=${FIREBASE_CLIENT_ID}
+            JWT_EXPIRES_IN=${JWT_EXPIRES_IN}
+            JWT_SECRET=${JWT_SECRET}
+            PORT=${PORT}" > .env
 
             # Create PM2 ecosystem file
-            cat > ecosystem.config.cjs << EOL
-            module.exports = {
+            echo "module.exports = {
               apps: [{
                 name: 'splitt-api',
                 script: 'src/server.js',
@@ -66,10 +63,9 @@ jobs:
                   NODE_ENV: 'production'
                 }
               }]
-            }
-            EOL
+            }" > ecosystem.config.cjs
 
-            # Restart PM2
+            # Restart application
             pm2 delete splitt-api || true
             pm2 start ecosystem.config.cjs --env production
             pm2 save
