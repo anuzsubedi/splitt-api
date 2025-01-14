@@ -7,63 +7,59 @@ on:
 
 jobs:
   deploy:
-    name: Deploy to DigitalOcean
+    name: Deploy Application
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
+      - name: Checkout Repository
+        uses: actions/checkout@v3
 
-    - name: Set up Node.js
-      uses: actions/setup-node@v3
-      with:
-        node-version: '18'
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "16"
 
-    - name: Install dependencies
-      run: npm install
+      - name: Install Dependencies
+        run: npm install
 
-    - name: Transfer files to DigitalOcean
-      uses: appleboy/scp-action@v0.1.3
-      with:
-        host: ${{ secrets.DO_DROPLET_IP }}
-        username: root
-        key: ${{ secrets.DO_SSH_PRIVATE_KEY }}
-        source: "./"
-        target: "/var/www/splitt-api" # Adjust target directory if needed
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v0.1.5
+        with:
+          host: ${{ secrets.DO_DROPLET_IP }}
+          username: root
+          key: ${{ secrets.DO_SSH_PRIVATE_KEY }}
+          port: 22
+          script: |
+            cd /var/www/splitt-api
+            git pull origin release
+            npm install
+            echo "Setting environment variables..."
+            echo "FIREBASE_CLIENT_EMAIL=${{ secrets.FIREBASE_CLIENT_EMAIL }}" > .env
+            echo "FIREBASE_PRIVATE_KEY=${{ secrets.FIREBASE_PRIVATE_KEY }}" >> .env
+            echo "FIREBASE_PRIVATE_KEY_ID=${{ secrets.FIREBASE_PRIVATE_KEY_ID }}" >> .env
+            echo "FIREBASE_PROJECT_ID=${{ secrets.FIREBASE_PROJECT_ID }}" >> .env
+            echo "JWT_EXPIRES_IN=${{ secrets.JWT_EXPIRES_IN }}" >> .env
+            echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> .env
+            echo "PORT=${{ secrets.PORT }}" >> .env
+            pm2 restart splitt-api || pm2 start src/server.js --name splitt-api -- --port ${{ secrets.PORT }}
+            pm2 save
 
-    - name: Set environment variables on server
-      run: |
-        ssh -i ~/.ssh/id_rsa root@${{ secrets.DO_DROPLET_IP }} << EOF
-          echo "Setting environment variables..."
-          echo "FIREBASE_CLIENT_EMAIL=${{ secrets.FIREBASE_CLIENT_EMAIL }}" > /var/www/splitt-api/.env
-          echo "FIREBASE_PRIVATE_KEY=${{ secrets.FIREBASE_PRIVATE_KEY }}" >> /var/www/splitt-api/.env
-          echo "FIREBASE_PRIVATE_KEY_ID=${{ secrets.FIREBASE_PRIVATE_KEY_ID }}" >> /var/www/splitt-api/.env
-          echo "FIREBASE_PROJECT_ID=${{ secrets.FIREBASE_PROJECT_ID }}" >> /var/www/splitt-api/.env
-          echo "JWT_EXPIRES_IN=${{ secrets.JWT_EXPIRES_IN }}" >> /var/www/splitt-api/.env
-          echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> /var/www/splitt-api/.env
-          echo "PORT=${{ secrets.PORT }}" >> /var/www/splitt-api/.env
-        EOF
-
-    - name: Start the server
-      run: |
-        ssh -i ~/.ssh/id_rsa root@${{ secrets.DO_DROPLET_IP }} << EOF
-          cd /var/www/splitt-api
-          pm2 delete splitt-api || true
-          pm2 start npm --name splitt-api -- start
-        EOF
-
-    - name: Wait for server to start
-      run: |
-        ssh -i ~/.ssh/id_rsa root@${{ secrets.DO_DROPLET_IP }} << EOF
-          echo "Waiting for server to start..."
-          for i in {1..10}; do
-            if grep -q "Server is running on http://localhost:" /var/www/splitt-api/server.log; then
-              echo "Server started successfully."
-              exit 0
-            fi
-            sleep 5
-          done
-          echo "Error: Server did not start."
-          pm2 logs splitt-api --lines 100
-          exit 1
-        EOF
+      - name: Wait for Server to Start
+        uses: appleboy/ssh-action@v0.1.5
+        with:
+          host: ${{ secrets.DO_DROPLET_IP }}
+          username: root
+          key: ${{ secrets.DO_SSH_PRIVATE_KEY }}
+          port: 22
+          script: |
+            echo "Waiting for server to start..."
+            for i in {1..10}; do
+              if grep -q "Server is running on http://localhost:${{ secrets.PORT }}" /var/www/splitt-api/.pm2/logs/splitt-api-out.log; then
+                echo "Server started successfully."
+                exit 0
+              fi
+              sleep 5
+            done
+            echo "Error: Server did not start. Showing logs..."
+            cat /var/www/splitt-api/.pm2/logs/splitt-api-out.log
+            exit 1
