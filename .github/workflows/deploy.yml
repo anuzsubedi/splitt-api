@@ -9,7 +9,7 @@ jobs:
   deploy:
     name: Deploy Application
     runs-on: ubuntu-latest
-    
+
     env:
       JWT_SECRET: ${{ secrets.JWT_SECRET }}
       JWT_EXPIRES_IN: ${{ secrets.JWT_EXPIRES_IN }}
@@ -32,21 +32,9 @@ jobs:
       - name: Install Dependencies
         run: npm install
 
-      - name: Test SSH Connection
-        uses: appleboy/ssh-action@v0.1.5
-        with:
-          debug: true
-          host: ${{ secrets.DO_DROPLET_IP }}
-          username: root
-          key: ${{ secrets.DO_SSH_PRIVATE_KEY }}
-          port: 22
-          script: |
-            echo "SSH connection successful!"
-
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v0.1.5
         with:
-          debug: true
           host: ${{ secrets.DO_DROPLET_IP }}
           username: root
           key: ${{ secrets.DO_SSH_PRIVATE_KEY }}
@@ -57,7 +45,7 @@ jobs:
             cd /var/www/splitt-api
             git pull origin release
             npm install
-            
+
             # Create .env file with proper escaping
             cat > .env << 'EOL'
             JWT_SECRET="${JWT_SECRET}"
@@ -69,17 +57,6 @@ jobs:
             FIREBASE_CLIENT_EMAIL="${FIREBASE_CLIENT_EMAIL}"
             FIREBASE_CLIENT_ID="${FIREBASE_CLIENT_ID}"
             EOL
-            
-            # Ensure PM2 is installed
-            if ! command -v pm2 &> /dev/null; then
-              npm install -g pm2
-            fi
-            
-            # Start/Restart application
-            pm2 describe splitt-api > /dev/null
-            if [ $? -eq 0 ]; then
-              pm2 restart splitt-api
-            else
-              pm2 start src/server.js --name splitt-api
-            fi
+
+            pm2 restart splitt-api || pm2 start src/server.js --name splitt-api -- --port 5000
             pm2 save
