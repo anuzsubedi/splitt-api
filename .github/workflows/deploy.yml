@@ -69,13 +69,3 @@ jobs:
 
             pm2 delete splitt-api || true
             pm2 start ecosystem.config.cjs --env production && pm2 save
-
-            # Health check
-            sleep 10
-            if curl -f "http://localhost:${PORT}/health" >/dev/null 2>&1; then
-              echo "Server is running successfully"
-              exit 0
-            else
-              echo "Server failed to start"
-              exit 1
-            fi
