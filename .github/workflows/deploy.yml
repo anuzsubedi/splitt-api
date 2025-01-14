@@ -9,57 +9,63 @@ jobs:
   deploy:
     name: Deploy Application
     runs-on: ubuntu-latest
-
+    
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v3
-
+        
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: "18"
-
+          
       - name: Install Dependencies
         run: npm install
-
+        
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v0.1.5
+        env:
+          FIREBASE_CLIENT_EMAIL: ${{ secrets.FIREBASE_CLIENT_EMAIL }}
+          FIREBASE_PRIVATE_KEY: ${{ secrets.FIREBASE_PRIVATE_KEY }}
+          FIREBASE_PRIVATE_KEY_ID: ${{ secrets.FIREBASE_PRIVATE_KEY_ID }}
+          FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+          JWT_EXPIRES_IN: ${{ secrets.JWT_EXPIRES_IN }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          PORT: ${{ secrets.PORT }}
         with:
           host: ${{ secrets.DO_DROPLET_IP }}
           username: root
           key: ${{ secrets.DO_SSH_PRIVATE_KEY }}
           port: 22
+          envs: FIREBASE_CLIENT_EMAIL,FIREBASE_PRIVATE_KEY,FIREBASE_PRIVATE_KEY_ID,FIREBASE_PROJECT_ID,JWT_EXPIRES_IN,JWT_SECRET,PORT
           script: |
             cd /var/www/splitt-api
             git pull origin release
+            
+            # Create/update .env file
+            cat > .env << EOF
+            FIREBASE_CLIENT_EMAIL=${FIREBASE_CLIENT_EMAIL}
+            FIREBASE_PRIVATE_KEY="${FIREBASE_PRIVATE_KEY}"
+            FIREBASE_PRIVATE_KEY_ID=${FIREBASE_PRIVATE_KEY_ID}
+            FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID}
+            JWT_EXPIRES_IN=${JWT_EXPIRES_IN}
+            JWT_SECRET=${JWT_SECRET}
+            PORT=${PORT}
+            EOF
+            
             npm install
-            echo "Setting environment variables..."
-            echo "FIREBASE_CLIENT_EMAIL=${{ secrets.FIREBASE_CLIENT_EMAIL }}" > .env
-            echo "FIREBASE_PRIVATE_KEY=${{ secrets.FIREBASE_PRIVATE_KEY }}" >> .env
-            echo "FIREBASE_PRIVATE_KEY_ID=${{ secrets.FIREBASE_PRIVATE_KEY_ID }}" >> .env
-            echo "FIREBASE_PROJECT_ID=${{ secrets.FIREBASE_PROJECT_ID }}" >> .env
-            echo "JWT_EXPIRES_IN=${{ secrets.JWT_EXPIRES_IN }}" >> .env
-            echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> .env
-            echo "PORT=${{ secrets.PORT }}" >> .env
-            pm2 restart splitt-api || pm2 start src/server.js --name splitt-api -- --port ${{ secrets.PORT }}
+            pm2 restart splitt-api || pm2 start src/server.js --name splitt-api -- --port ${PORT}
             pm2 save
-
-      - name: Wait for Server to Start
-        uses: appleboy/ssh-action@v0.1.5
-        with:
-          host: ${{ secrets.DO_DROPLET_IP }}
-          username: root
-          key: ${{ secrets.DO_SSH_PRIVATE_KEY }}
-          port: 22
-          script: |
+            
+            # Wait for the server to start and verify it's running
             echo "Waiting for server to start..."
-            for i in {1..10}; do
-              if grep -q "Server is running on http://localhost:${{ secrets.PORT }}" /var/www/splitt-api/.pm2/logs/splitt-api-out.log; then
-                echo "Server started successfully."
-                exit 0
-              fi
-              sleep 5
-            done
-            echo "Error: Server did not start. Showing logs..."
-            cat /var/www/splitt-api/.pm2/logs/splitt-api-out.log
-            exit 1
+            sleep 10
+            
+            # Check if server is responding
+            if curl -f "http://localhost:${PORT}/health" >/dev/null 2>&1; then
+              echo "Server is running successfully"
+              exit 0
+            else
+              echo "Server failed to start"
+              exit 1
+            fi

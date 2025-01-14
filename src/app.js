@@ -27,6 +27,10 @@ router.use(logger);
 
 router.post("/google", auth);
 
+app.get('/health', (req, res) => {
+    res.status(200).send('OK');
+});
+
 // Default route
 app.get("/", (req, res) => {
     res.send("Server is running. API version: beta 0.2.1");
