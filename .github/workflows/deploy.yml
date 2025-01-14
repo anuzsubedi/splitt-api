@@ -29,6 +29,7 @@ jobs:
           FIREBASE_PRIVATE_KEY: ${{ secrets.FIREBASE_PRIVATE_KEY }}
           FIREBASE_PRIVATE_KEY_ID: ${{ secrets.FIREBASE_PRIVATE_KEY_ID }}
           FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+          FIREBASE_CLIENT_ID: ${{ secrets.FIREBASE_CLIENT_ID }}
           JWT_EXPIRES_IN: ${{ secrets.JWT_EXPIRES_IN }}
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
           PORT: ${{ secrets.PORT }}
@@ -37,9 +38,12 @@ jobs:
           username: root
           key: ${{ secrets.DO_SSH_PRIVATE_KEY }}
           port: 22
-          envs: FIREBASE_CLIENT_EMAIL,FIREBASE_PRIVATE_KEY,FIREBASE_PRIVATE_KEY_ID,FIREBASE_PROJECT_ID,JWT_EXPIRES_IN,JWT_SECRET,PORT
+          envs: FIREBASE_CLIENT_EMAIL,FIREBASE_PRIVATE_KEY,FIREBASE_PRIVATE_KEY_ID,FIREBASE_PROJECT_ID,FIREBASE_CLIENT_ID,JWT_EXPIRES_IN,JWT_SECRET,PORT
           script: |
+            # Navigate to the project directory
             cd /var/www/splitt-api
+
+            # Pull the latest changes
             git pull origin release
             
             # Create/update .env file
@@ -48,12 +52,20 @@ jobs:
             FIREBASE_PRIVATE_KEY="${FIREBASE_PRIVATE_KEY}"
             FIREBASE_PRIVATE_KEY_ID=${FIREBASE_PRIVATE_KEY_ID}
             FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID}
+            FIREBASE_CLIENT_ID=${FIREBASE_CLIENT_ID}
             JWT_EXPIRES_IN=${JWT_EXPIRES_IN}
             JWT_SECRET=${JWT_SECRET}
             PORT=${PORT}
             EOF
             
+            # Display .env content for debugging (optional; remove in production)
+            echo "Generated .env file:"
+            cat .env
+            
+            # Install dependencies
             npm install
+            
+            # Restart the application with PM2
             pm2 restart splitt-api || pm2 start src/server.js --name splitt-api -- --port ${PORT}
             pm2 save
             
