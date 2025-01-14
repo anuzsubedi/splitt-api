@@ -40,40 +40,42 @@ jobs:
           port: 22
           envs: FIREBASE_CLIENT_EMAIL,FIREBASE_PRIVATE_KEY,FIREBASE_PRIVATE_KEY_ID,FIREBASE_PROJECT_ID,FIREBASE_CLIENT_ID,JWT_EXPIRES_IN,JWT_SECRET,PORT
           script: |
-            # Navigate to the project directory
             cd /var/www/splitt-api
-
-            # Pull the latest changes
             git pull origin release
-            
-            # Create/update .env file
-            cat > .env << EOF
-            FIREBASE_CLIENT_EMAIL=${FIREBASE_CLIENT_EMAIL}
-            FIREBASE_PRIVATE_KEY="${FIREBASE_PRIVATE_KEY}"
-            FIREBASE_PRIVATE_KEY_ID=${FIREBASE_PRIVATE_KEY_ID}
-            FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID}
-            FIREBASE_CLIENT_ID=${FIREBASE_CLIENT_ID}
-            JWT_EXPIRES_IN=${JWT_EXPIRES_IN}
-            JWT_SECRET=${JWT_SECRET}
-            PORT=${PORT}
-            EOF
-            
-            # Display .env content for debugging (optional; remove in production)
-            echo "Generated .env file:"
-            cat .env
-            
-            # Install dependencies
             npm install
-            
-            # Restart the application with PM2
-            pm2 restart splitt-api || pm2 start src/server.js --name splitt-api -- --port ${PORT}
+
+            # Create .env file
+            cat > .env << EOL
+            FIREBASE_CLIENT_EMAIL="${FIREBASE_CLIENT_EMAIL}"
+            FIREBASE_PRIVATE_KEY="${FIREBASE_PRIVATE_KEY}"
+            FIREBASE_PRIVATE_KEY_ID="${FIREBASE_PRIVATE_KEY_ID}"
+            FIREBASE_PROJECT_ID="${FIREBASE_PROJECT_ID}"
+            FIREBASE_CLIENT_ID="${FIREBASE_CLIENT_ID}"
+            JWT_EXPIRES_IN="${JWT_EXPIRES_IN}"
+            JWT_SECRET="${JWT_SECRET}"
+            PORT="${PORT}"
+            EOL
+
+            # Create PM2 ecosystem file
+            cat > ecosystem.config.cjs << EOL
+            module.exports = {
+              apps: [{
+                name: 'splitt-api',
+                script: 'src/server.js',
+                env: {
+                  NODE_ENV: 'production'
+                }
+              }]
+            }
+            EOL
+
+            # Restart PM2
+            pm2 delete splitt-api || true
+            pm2 start ecosystem.config.cjs --env production
             pm2 save
-            
-            # Wait for the server to start and verify it's running
-            echo "Waiting for server to start..."
+
+            # Health check
             sleep 10
-            
-            # Check if server is responding
             if curl -f "http://localhost:${PORT}/health" >/dev/null 2>&1; then
               echo "Server is running successfully"
               exit 0
