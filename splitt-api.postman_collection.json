@@ -1,35 +1,49 @@
 {
 	"info": {
-		"_postman_id": "SplittAPI",
-		"name": "Splitt API",
+		"name": "Splitt API Tests",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:5000"
+		}
+	],
 	"item": [
 		{
 			"name": "Authentication",
 			"item": [
 				{
-					"name": "Auth",
+					"name": "Google Auth",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function() {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Response has token', function() {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData.token).to.exist;",
+									"    pm.environment.set('authToken', jsonData.token);",
+									"});"
+								]
+							}
+						}
+					],
 					"request": {
 						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
+						"url": "{{baseUrl}}/auth/google",
 						"body": {
 							"mode": "raw",
-							"raw": "{\n\t\"uuid\": \"test-uuid-123\",\n\t\"email\": \"test@example.com\",\n\t\"name\": \"Test User\",\n\t\"image\": \"https://example.com/avatar.jpg\"\n}"
-						},
-						"url": {
-							"raw": "{{baseUrl}}/auth",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"auth"
-							]
+							"raw": "{\"idToken\": \"{{googleIdToken}}\"}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
 						}
 					}
 				}
@@ -39,248 +53,199 @@
 			"name": "Groups",
 			"item": [
 				{
-					"name": "Create Group (Success)",
+					"name": "Create Group - Success",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 201', function() {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"pm.test('Group ID exists', function() {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData.groupId).to.exist;",
+									"    pm.environment.set('groupId', jsonData.groupId);",
+									"});"
+								]
+							}
+						}
+					],
 					"request": {
 						"method": "POST",
 						"header": [
 							{
-								"key": "Content-Type",
-								"value": "application/json"
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
 							}
 						],
+						"url": "{{baseUrl}}/groups",
 						"body": {
 							"mode": "raw",
-							"raw": "{\n\t\"name\": \"Weekend Trip\",\n\t\"description\": \"Planning our weekend getaway\"\n}"
-						},
-						"url": {
-							"raw": "{{baseUrl}}/groups",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"groups"
-							]
-						}
-					}
-				},
-				{
-					"name": "Create Group (Fail - No Name)",
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n\t\"description\": \"This should fail\"\n}"
-						},
-						"url": {
-							"raw": "{{baseUrl}}/groups",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"groups"
-							]
-						}
-					}
-				},
-				{
-					"name": "Get All Groups",
-					"request": {
-						"method": "GET",
-						"url": {
-							"raw": "{{baseUrl}}/groups",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"groups"
-							]
-						}
-					}
-				},
-				{
-					"name": "Get Group By Id",
-					"request": {
-						"method": "GET",
-						"url": {
-							"raw": "{{baseUrl}}/groups/1",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"groups",
-								"1"
-							]
-						}
-					}
-				},
-				{
-					"name": "Get Group By Id (Fail - Invalid Id)",
-					"request": {
-						"method": "GET",
-						"url": {
-							"raw": "{{baseUrl}}/groups/999",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"groups",
-								"999"
-							]
-						}
-					}
-				},
-				{
-					"name": "Delete Group",
-					"request": {
-						"method": "DELETE",
-						"url": {
-							"raw": "{{baseUrl}}/groups/1",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"groups",
-								"1"
-							]
-						}
-					}
-				},
-				{
-					"name": "Add Member (Success)",
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n\t\"userEmail\": \"test@example.com\"\n}"
-						},
-						"url": {
-							"raw": "{{baseUrl}}/groups/1/members",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"groups",
-								"1",
-								"members"
-							]
-						}
-					}
-				},
-				{
-					"name": "Add Member (Fail - No Email)",
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{}"
-						},
-						"url": {
-							"raw": "{{baseUrl}}/groups/1/members",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"groups",
-								"1",
-								"members"
-							]
-						}
-					}
-				},
-				{
-					"name": "Remove Member",
-					"request": {
-						"method": "DELETE",
-						"url": {
-							"raw": "{{baseUrl}}/groups/1/members/test@example.com",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"groups",
-								"1",
-								"members",
-								"test@example.com"
-							]
-						}
-					}
-				},
-				{
-					"name": "Reinstate Member",
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n\t\"userEmail\": \"test@example.com\"\n}"
-						},
-						"url": {
-							"raw": "{{baseUrl}}/groups/1/members/reinstate",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"groups",
-								"1",
-								"members",
-								"reinstate"
-							]
-						}
-					}
-				},
-				{
-					"name": "Get User's Groups",
-					"request": {
-						"method": "GET",
-						"url": {
-							"raw": "{{baseUrl}}/groups/user/groups?userEmail=test@example.com",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"groups",
-								"user",
-								"groups"
-							],
-							"query": [
-								{
-									"key": "userEmail",
-									"value": "test@example.com"
+							"raw": "{\"name\": \"Test Group\", \"description\": \"Test Description\"}",
+							"options": {
+								"raw": {
+									"language": "json"
 								}
-							]
+							}
 						}
+					}
+				},
+				{
+					"name": "Create Group - Fail (No Name)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 400', function() {",
+									"    pm.response.to.have.status(400);",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/groups",
+						"body": {
+							"mode": "raw",
+							"raw": "{\"description\": \"Test Description\"}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					}
+				},
+				{
+					"name": "Get Group - Success",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function() {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Group details match', function() {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData.name).to.equal('Test Group');",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/groups/{{groupId}}"
+					}
+				},
+				{
+					"name": "Add Member - Success",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 201', function() {",
+									"    pm.response.to.have.status(201);",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/groups/{{groupId}}/members",
+						"body": {
+							"mode": "raw",
+							"raw": "{\"userEmail\": \"test@example.com\"}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					}
+				},
+				{
+					"name": "Get User Groups",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function() {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Groups array exists', function() {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.be.an('array');",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/groups/user/groups?userEmail={{userEmail}}"
+					}
+				},
+				{
+					"name": "Delete Group - Success",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function() {",
+									"    pm.response.to.have.status(200);",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/groups/{{groupId}}"
 					}
 				}
 			]
-		}
-	],
-	"variable": [
-		{
-			"key": "baseUrl",
-			"value": "http://localhost:5000"
 		}
 	]
 }
