@@ -18,7 +18,7 @@ router.use(authMiddleware);
 
 // Routes that don't require group membership
 router.post('/', createGroupHandler);
-router.get('/', getAllGroupsHandler);
+// router.get('/', getAllGroupsHandler);
 router.get('/user/groups', getGroupsByMemberHandler);
 
 // Routes that require group membership
