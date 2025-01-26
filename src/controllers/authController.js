@@ -9,7 +9,7 @@ export const auth = async (req, res, next) => {
         if (!idToken) {
             return res.status(400).json({ error: "Google ID token is required." });
         }
-
+        console.log(idToken);
         const decodedToken = await admin.auth().verifyIdToken(idToken);
         const { email, name, picture, uid } = decodedToken;
 
