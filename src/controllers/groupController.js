@@ -18,7 +18,13 @@ export const createGroupHandler = (req, res) => {
         const { name, description } = req.body;
         if (!name) return res.status(400).json({ error: 'Group name is required' });
 
+        // Create the group
         const groupId = createGroup(name, description);
+
+        // Add the creator as a group member
+        const creatorEmail = req.user.email; // Get email from JWT token payload
+        addGroupMember(groupId, creatorEmail);
+
         res.status(201).json({ message: 'Group created', groupId });
     } catch (err) {
         res.status(500).json({ error: 'Failed to create group' });
