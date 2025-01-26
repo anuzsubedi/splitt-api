@@ -1,8 +1,8 @@
 import db from '../database/db.js';
 
-export const createGroup = (name, description) => {
-    const stmt = db.prepare('INSERT INTO groups (name, description) VALUES (?, ?)');
-    const result = stmt.run(name, description);
+export const createGroup = (name, description, creatorEmail) => {
+    const stmt = db.prepare('INSERT INTO groups (name, description, creator_email) VALUES (?, ?, ?)');
+    const result = stmt.run(name, description, creatorEmail);
     return result.lastInsertRowid;
 };
 

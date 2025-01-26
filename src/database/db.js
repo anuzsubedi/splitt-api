@@ -23,9 +23,11 @@ db.exec(`
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
     description TEXT,
+    creator_email TEXT NOT NULL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     is_deleted BOOLEAN DEFAULT FALSE, 
-    deleted_at DATETIME
+    deleted_at DATETIME,
+    FOREIGN KEY (creator_email) REFERENCES users (email)
   )
 `);
 
