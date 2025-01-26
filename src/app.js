@@ -33,7 +33,7 @@ app.get('/health', (req, res) => {
 
 // Default route
 app.get("/", (req, res) => {
-    res.send("Server is running. API version: beta 0.2.2");
+    res.send("Server is running. API version: beta 0.2.3");
 });
 
 // Routes
