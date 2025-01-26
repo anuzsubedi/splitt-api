@@ -9,23 +9,22 @@ import {
     getGroupsByMemberHandler,
 } from '../controllers/groupController.js';
 import authMiddleware from '../middlewares/authMiddleware.js'; // Import the JWT middleware
+import { isGroupMember } from '../middlewares/groupAccessMiddleware.js';
 
 const router = express.Router();
 
 // Apply JWT middleware to protect all group routes
 router.use(authMiddleware);
 
-// Group management routes
-router.post('/', createGroupHandler); // Create a new group
-router.get('/', getAllGroupsHandler); // Get all groups
-router.get('/:id', getGroupByIdHandler); // Get a group by its ID
-router.delete('/:id', deleteGroupHandler); // Delete a group by its ID
+// Routes that don't require group membership
+router.post('/', createGroupHandler);
+router.get('/', getAllGroupsHandler);
+router.get('/user/groups', getGroupsByMemberHandler);
 
-// Group member management routes
-router.post('/:id/members', addGroupMemberHandler); // Add a member to a group
-router.delete('/:id/members/:userEmail', removeGroupMemberHandler); // Remove a member from a group
-
-// User's groups route
-router.get('/user/groups', getGroupsByMemberHandler); // Get all groups for the logged-in user
+// Routes that require group membership
+router.get('/:id', isGroupMember, getGroupByIdHandler);
+router.post('/:id/members', isGroupMember, addGroupMemberHandler);
+router.delete('/:id', isGroupMember, deleteGroupHandler);
+router.delete('/:id/members/:userEmail', isGroupMember, removeGroupMemberHandler);
 
 export default router;

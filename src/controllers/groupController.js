@@ -3,7 +3,8 @@ import {
     getAllGroups,
     getGroupById,
     deleteGroup,
-    getGroupsByMember
+    getGroupsByMember,
+    isGroupCreator
 } from '../models/groupModel.js';
 import {
     addGroupMember,
@@ -96,19 +97,28 @@ export const removeGroupMemberHandler = (req, res) => {
 export const deleteGroupHandler = (req, res) => {
     try {
         const { id } = req.params;
+        const userEmail = req.user.email;
+
+        // Check if user is creator
+        if (!isGroupCreator(id, userEmail)) {
+            return res.status(403).json({
+                error: 'Access denied. Only group creator can delete the group.'
+            });
+        }
+
         deleteGroup(id);
-        res.json({ message: 'Group deleted' });
+        res.json({ message: 'Group deleted successfully' });
     } catch (err) {
+        console.error('Error deleting group:', err);
         res.status(500).json({ error: 'Failed to delete group' });
     }
 };
 
 export const getGroupsByMemberHandler = (req, res) => {
     try {
-        const { userEmail } = req.query;
-        if (!userEmail) return res.status(400).json({ error: 'User email is required' });
+        if (!req.user?.email) return res.status(401).json({ error: 'Not authorized' });
 
-        const groups = getGroupsByMember(userEmail);
+        const groups = getGroupsByMember(req.user.email);
         res.json(groups);
     } catch (err) {
         res.status(500).json({ error: 'Failed to fetch user groups' });

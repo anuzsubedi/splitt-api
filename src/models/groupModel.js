@@ -29,3 +29,10 @@ export const getGroupsByMember = (userEmail) => {
     `);
     return stmt.all(userEmail);
 };
+
+// Add new function to check creator
+export const isGroupCreator = (groupId, userEmail) => {
+    const stmt = db.prepare('SELECT creator_email FROM groups WHERE id = ? AND is_deleted = 0');
+    const group = stmt.get(groupId);
+    return group && group.creator_email === userEmail;
+};
